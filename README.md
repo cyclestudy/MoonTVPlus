@@ -268,6 +268,13 @@ dockge/komodo 等 docker compose UI 也有自动更新功能
 | VIDEOINFO_CACHE_MINUTES | 私人影库视频信息在内存中的缓存时长（分钟） | 正整数 | 1440（1天） |
 | NEXT_PUBLIC_ENABLE_SOURCE_SEARCH | 是否开启源站寻片功能 | true/false | true |
 | MAX_PLAY_RECORDS_PER_USER | 单个用户播放记录清理阈值（超过此数量将自动清理旧记录） | 正整数 | 100 |
+| INIT_CONFIG | 初始配置（JSON 格式，包含 api_site、custom_category、lives 等） | JSON 字符串 | (空) |
+| CONFIG_SUBSCRIPTION_URL | 配置订阅 URL（Base58 编码的配置文件地址，优先级高于 INIT_CONFIG） | URL | (空) |
+| TMDB_API_KEY | TMDB API 密钥 | 任意字符串 | (空) |
+| TMDB_PROXY | TMDB 代理地址 | URL | (空) |
+| TMDB_REVERSE_PROXY | TMDB 反向代理地址 | URL | (空) |
+| DANMAKU_API_BASE | 弹幕 API 地址 | URL | http://localhost:9321 |
+| DANMAKU_API_TOKEN | 弹幕 API Token | 任意字符串 | 87654321 |
 
 NEXT_PUBLIC_DOUBAN_PROXY_TYPE 选项解释：
 

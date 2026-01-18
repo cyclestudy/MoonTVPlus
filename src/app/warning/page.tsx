@@ -47,15 +47,6 @@ export default function WarningPage() {
             </p>
           </div>
 
-          <div className='bg-blue-50 border-l-4 border-blue-500 p-3 sm:p-4 rounded-r-lg'>
-            <p className='text-base sm:text-lg font-semibold text-blue-800 mb-2'>
-              📢 重要更新说明
-            </p>
-            <p className='text-sm sm:text-base text-blue-700'>
-              自 v205.0.0 版本起，已不再支持无数据库部署方式，请配置数据库相关环境变量。
-            </p>
-          </div>
-
           <div className='space-y-3 sm:space-y-4'>
             <h2 className='text-lg sm:text-xl font-semibold text-gray-900'>
               主要风险

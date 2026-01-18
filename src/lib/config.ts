@@ -194,13 +194,37 @@ async function getInitConfig(configFile: string, subConfig: {
     LastCheck: "",
   }): Promise<AdminConfig> {
   let cfgFile: ConfigFileStruct;
+
+  // 优先从环境变量读取订阅 URL
+  const envSubUrl = process.env.CONFIG_SUBSCRIPTION_URL || "";
+
+  if (envSubUrl) {
+    try {
+      const response = await fetch(envSubUrl);
+      if (response.ok) {
+        const configContent = await response.text();
+        const bs58 = (await import('bs58')).default;
+        const decodedBytes = bs58.decode(configContent);
+        const decodedContent = new TextDecoder().decode(decodedBytes);
+        configFile = decodedContent;
+        console.log('已从订阅 URL 获取配置');
+      }
+    } catch (e) {
+      console.error('从订阅 URL 获取配置失败:', e);
+    }
+  }
+
+  // 优先从环境变量读取配置
+  const envConfig = process.env.INIT_CONFIG || "";
+  const configSource = envConfig || configFile;
+
   try {
-    cfgFile = JSON.parse(configFile) as ConfigFileStruct;
+    cfgFile = JSON.parse(configSource) as ConfigFileStruct;
   } catch (e) {
     cfgFile = {} as ConfigFileStruct;
   }
   const adminConfig: AdminConfig = {
-    ConfigFile: configFile,
+    ConfigFile: configSource,
     ConfigSubscribtion: subConfig,
     SiteConfig: {
       SiteName: process.env.NEXT_PUBLIC_SITE_NAME || 'MoonTVPlus',
@@ -224,9 +248,9 @@ async function getInitConfig(configFile: string, subConfig: {
       DanmakuApiBase: process.env.DANMAKU_API_BASE || 'http://localhost:9321',
       DanmakuApiToken: process.env.DANMAKU_API_TOKEN || '87654321',
       // TMDB配置
-      TMDBApiKey: '',
-      TMDBProxy: '',
-      TMDBReverseProxy: '',
+      TMDBApiKey: process.env.TMDB_API_KEY || '',
+      TMDBProxy: process.env.TMDB_PROXY || '',
+      TMDBReverseProxy: process.env.TMDB_REVERSE_PROXY || '',
       // 评论功能开关
       EnableComments: false,
     },
@@ -245,13 +269,21 @@ async function getInitConfig(configFile: string, subConfig: {
   } catch (e) {
     console.error('获取用户列表失败:', e);
   }
-  const allUsers = userNames.filter((u) => u !== process.env.USERNAME).map((u) => ({
+
+  // localStorage 模式下，只使用环境变量中的站长账号
+  const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
+  if (storageType === 'localstorage') {
+    userNames = [];
+  }
+
+  const ownerUsername = process.env.USERNAME || 'default';
+  const allUsers = userNames.filter((u) => u !== ownerUsername).map((u) => ({
     username: u,
     role: 'user',
     banned: false,
   }));
   allUsers.unshift({
-    username: process.env.USERNAME!,
+    username: ownerUsername,
     role: 'owner',
     banned: false,
   });
@@ -313,6 +345,17 @@ export async function getConfig(): Promise<AdminConfig> {
 
   // 创建初始化 Promise
   configInitPromise = (async () => {
+    const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
+
+    // localStorage 模式下直接从环境变量初始化
+    if (storageType === 'localstorage') {
+      console.log('localStorage 模式：从环境变量初始化配置');
+      const adminConfig = await getInitConfig("");
+      cachedConfig = configSelfCheck(adminConfig);
+      configInitPromise = null;
+      return cachedConfig;
+    }
+
     // 读 db
     let adminConfig: AdminConfig | null = null;
     let dbReadFailed = false;
@@ -561,6 +604,12 @@ export async function getAvailableApiSites(user?: string): Promise<ApiSite[]> {
   const allApiSites = config.SourceConfig.filter((s) => !s.disabled);
 
   if (!user) {
+    return allApiSites;
+  }
+
+  // localStorage 模式下直接返回所有可用源
+  const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
+  if (storageType === 'localstorage') {
     return allApiSites;
   }
 

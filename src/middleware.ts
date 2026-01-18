@@ -14,10 +14,10 @@ export async function middleware(request: NextRequest) {
 
   const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
 
-  if (!process.env.USERNAME || !process.env.NEXT_PUBLIC_STORAGE_TYPE || !process.env.PASSWORD) {
-    // 如果未配置必要的环境变量，重定向到警告页面
+  if (!process.env.PASSWORD) {
+    // 如果未配置密码，重定向到警告页面
     const warningUrl = new URL('/warning', request.url);
-    return NextResponse.redirect(warningUrl);
+    return warningUrl.pathname === pathname ? NextResponse.next() : NextResponse.redirect(warningUrl);
   }
 
   // 从cookie获取认证信息
