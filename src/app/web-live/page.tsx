@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import PageLayout from '@/components/PageLayout';
 import { Radio } from 'lucide-react';
+import Head from 'next/head';
 
 let Artplayer: any = null;
 let Hls: any = null;
@@ -19,14 +20,25 @@ export default function WebLivePage() {
   const [videoUrl, setVideoUrl] = useState('');
   const [activeTab, setActiveTab] = useState<'rooms' | 'platforms'>('rooms');
   const [isChannelListCollapsed, setIsChannelListCollapsed] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.name = 'referrer';
+    meta.content = 'no-referrer';
+    document.head.appendChild(meta);
+
     if (typeof window !== 'undefined') {
       import('artplayer').then(mod => { Artplayer = mod.default; });
       import('hls.js').then(mod => { Hls = mod.default; });
       import('flv.js').then(mod => { flvjs = mod.default; });
     }
     fetchSources();
+
+    return () => {
+      document.head.removeChild(meta);
+    };
   }, []);
 
   const fetchSources = async () => {
@@ -61,6 +73,11 @@ export default function WebLivePage() {
     if (!flvjs) return;
     const flvPlayer = flvjs.createPlayer({ type: 'flv', url, isLive: true });
     flvPlayer.attachMediaElement(video);
+    flvPlayer.on(flvjs.Events.ERROR, (errorType: string, errorDetail: string) => {
+      console.error('FLV.js error:', errorType, errorDetail);
+      setErrorMessage(`播放失败: ${errorType} - ${errorDetail}`);
+      setVideoUrl('');
+    });
     flvPlayer.load();
     (video as any).flvPlayer = flvPlayer;
   }
@@ -94,14 +111,22 @@ export default function WebLivePage() {
 
   const handleSourceClick = async (source: any) => {
     setCurrentSource(source);
+    setIsVideoLoading(true);
+    setErrorMessage(null);
     try {
       const res = await fetch(`/api/web-live/stream?platform=${source.platform}&roomId=${source.roomId}`);
       if (res.ok) {
         const data = await res.json();
         setVideoUrl(data.url);
+      } else {
+        const data = await res.json();
+        setErrorMessage(data.error || '获取直播流失败');
       }
     } catch (err) {
       console.error('获取直播流失败:', err);
+      setErrorMessage(err instanceof Error ? err.message : '获取直播流失败');
+    } finally {
+      setIsVideoLoading(false);
     }
   };
 
@@ -210,6 +235,42 @@ export default function WebLivePage() {
             <div className={`h-full transition-all duration-300 ease-in-out ${isChannelListCollapsed ? 'col-span-1' : 'md:col-span-3'}`}>
               <div className='relative w-full h-[300px] lg:h-full'>
                 <div ref={artRef} className='bg-black w-full h-full rounded-xl overflow-hidden shadow-lg border border-white/0 dark:border-white/30'></div>
+
+                {errorMessage && (
+                  <div className='absolute inset-0 bg-black/90 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-white/0 dark:border-white/30 flex items-center justify-center z-[600] transition-all duration-300'>
+                    <div className='text-center max-w-md mx-auto px-6'>
+                      <div className='relative mb-8'>
+                        <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
+                          <div className='text-white text-4xl'>⚠️</div>
+                          <div className='absolute -inset-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl opacity-20 animate-pulse'></div>
+                        </div>
+                      </div>
+                      <div className='space-y-4'>
+                        <h3 className='text-xl font-semibold text-white'>获取直播流失败</h3>
+                        <div className='bg-orange-500/20 border border-orange-500/30 rounded-lg p-4'>
+                          <p className='text-orange-300 font-medium'>{errorMessage}</p>
+                        </div>
+                        <p className='text-sm text-gray-300'>请尝试其他房间</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {isVideoLoading && (
+                  <div className='absolute inset-0 bg-black/85 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-white/0 dark:border-white/30 flex items-center justify-center z-[500] transition-all duration-300'>
+                    <div className='text-center max-w-md mx-auto px-6'>
+                      <div className='relative mb-8'>
+                        <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
+                          <div className='text-white text-4xl'>📺</div>
+                          <div className='absolute -inset-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl opacity-20 animate-spin'></div>
+                        </div>
+                      </div>
+                      <div className='space-y-2'>
+                        <p className='text-xl font-semibold text-white animate-pulse'>🔄 加载中...</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
