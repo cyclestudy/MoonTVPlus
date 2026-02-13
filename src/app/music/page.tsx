@@ -14,6 +14,7 @@ import {
 import AddToPlaylistModal from '@/components/AddToPlaylistModal';
 import Toast, { ToastProps } from '@/components/Toast';
 import LyricsPiPWindow from '@/components/LyricsPiPWindow';
+import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
 
 interface Song {
   id: string;
@@ -181,6 +182,9 @@ export default function MusicPage() {
   // 页面加载时恢复播放状态和数据库记录
   useEffect(() => {
     const initializePlayState = async () => {
+      // 未登录时不加载播放记录
+      const authInfo = getAuthInfoFromBrowserCookie();
+      if (!authInfo?.username) return;
       try {
         // 1. 直接从 API 同步加载播放记录（阻塞等待，不使用缓存）
         const response = await fetch('/api/music/playrecords');

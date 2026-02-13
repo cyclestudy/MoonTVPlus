@@ -229,6 +229,9 @@ export const UserMenu: React.FC = () => {
 
   // 加载未读通知数量
   const loadUnreadCount = async () => {
+    // 未登录时不加载通知
+    const authInfo = getAuthInfoFromBrowserCookie();
+    if (!authInfo?.username) return;
     try {
       const response = await fetch('/api/notifications');
       if (response.ok) {

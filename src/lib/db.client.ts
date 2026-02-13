@@ -17,6 +17,13 @@
 import { getAuthInfoFromBrowserCookie, clearAuthCookie } from './auth';
 import { DanmakuFilterConfig, EpisodeFilterConfig,SkipConfig } from './types';
 
+// 检查用户是否已登录（用于数据库存储模式下跳过游客的 API 请求）
+function isLoggedIn(): boolean {
+  if (typeof window === 'undefined') return false;
+  const authInfo = getAuthInfoFromBrowserCookie();
+  return !!(authInfo && authInfo.username);
+}
+
 // 全局错误触发函数
 function triggerGlobalError(message: string) {
   if (typeof window !== 'undefined') {
@@ -656,6 +663,9 @@ export async function getAllPlayRecords(): Promise<Record<string, PlayRecord>> {
 
   // 数据库存储模式：使用混合缓存策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时直接返回空数据
+    if (!isLoggedIn()) return {};
+
     // 优先从缓存获取数据
     const cachedData = cacheManager.getCachedPlayRecords();
 
@@ -721,6 +731,9 @@ export async function savePlayRecord(
 
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     const cachedRecords = cacheManager.getCachedPlayRecords() || {};
     cachedRecords[key] = record;
@@ -784,6 +797,9 @@ export async function deletePlayRecord(
 
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     const cachedRecords = cacheManager.getCachedPlayRecords() || {};
     delete cachedRecords[key];
@@ -845,6 +861,9 @@ export async function getSearchHistory(): Promise<string[]> {
 
   // 数据库存储模式：使用混合缓存策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时直接返回空数据
+    if (!isLoggedIn()) return [];
+
     // 优先从缓存获取数据
     const cachedData = cacheManager.getCachedSearchHistory();
 
@@ -907,6 +926,9 @@ export async function addSearchHistory(keyword: string): Promise<void> {
 
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     const cachedHistory = cacheManager.getCachedSearchHistory() || [];
     const newHistory = [trimmed, ...cachedHistory.filter((k) => k !== trimmed)];
@@ -967,6 +989,9 @@ export async function addSearchHistory(keyword: string): Promise<void> {
 export async function clearSearchHistory(): Promise<void> {
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     cacheManager.cacheSearchHistory([]);
 
@@ -1008,6 +1033,9 @@ export async function deleteSearchHistory(keyword: string): Promise<void> {
 
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     const cachedHistory = cacheManager.getCachedSearchHistory() || [];
     const newHistory = cachedHistory.filter((k) => k !== trimmed);
@@ -1072,6 +1100,9 @@ export async function getAllFavorites(): Promise<Record<string, Favorite>> {
 
   // 数据库存储模式：使用混合缓存策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时直接返回空数据
+    if (!isLoggedIn()) return {};
+
     // 优先从缓存获取数据
     const cachedData = cacheManager.getCachedFavorites();
 
@@ -1153,6 +1184,9 @@ export async function saveFavorite(
 
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     const cachedFavorites = cacheManager.getCachedFavorites() || {};
     cachedFavorites[key] = favorite;
@@ -1216,6 +1250,9 @@ export async function deleteFavorite(
 
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     const cachedFavorites = cacheManager.getCachedFavorites() || {};
     delete cachedFavorites[key];
@@ -1276,6 +1313,9 @@ export async function isFavorited(
   // 数据库存储模式：直接从缓存读取，不触发后台刷新
   // 后台刷新由 getAllFavorites() 统一管理，避免重复请求
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时返回 false
+    if (!isLoggedIn()) return false;
+
     const cachedFavorites = cacheManager.getCachedFavorites();
 
     if (cachedFavorites) {
@@ -1301,6 +1341,9 @@ export async function isFavorited(
 export async function clearAllPlayRecords(): Promise<void> {
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     cacheManager.cachePlayRecords({});
 
@@ -1342,6 +1385,9 @@ export async function clearAllPlayRecords(): Promise<void> {
 export async function clearAllFavorites(): Promise<void> {
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     cacheManager.cacheFavorites({});
 
@@ -1394,6 +1440,7 @@ export function clearUserCache(): void {
  */
 export async function refreshAllCache(): Promise<void> {
   if (STORAGE_TYPE === 'localstorage') return;
+  if (!isLoggedIn()) return;
 
   try {
     // 使用 Promise 缓存防止并发重复刷新
@@ -1524,6 +1571,7 @@ export function subscribeToDataUpdates<T>(
  */
 export async function preloadUserData(): Promise<void> {
   if (STORAGE_TYPE === 'localstorage') return;
+  if (!isLoggedIn()) return;
 
   // 检查是否已有有效缓存，避免重复请求
   const status = getCacheStatus();
@@ -1562,6 +1610,9 @@ export async function getSkipConfig(
 
   // 数据库存储模式：使用混合缓存策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时返回空
+    if (!isLoggedIn()) return null;
+
     // 优先从缓存获取数据
     const cachedData = cacheManager.getCachedSkipConfigs();
 
@@ -1627,6 +1678,9 @@ export async function saveSkipConfig(
 
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     const cachedConfigs = cacheManager.getCachedSkipConfigs() || {};
     cachedConfigs[key] = config;
@@ -1690,6 +1744,9 @@ export async function getAllSkipConfigs(): Promise<Record<string, SkipConfig>> {
 
   // 数据库存储模式：使用混合缓存策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时直接返回空数据
+    if (!isLoggedIn()) return {};
+
     // 优先从缓存获取数据
     const cachedData = cacheManager.getCachedSkipConfigs();
 
@@ -1754,6 +1811,9 @@ export async function deleteSkipConfig(
 
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     const cachedConfigs = cacheManager.getCachedSkipConfigs() || {};
     delete cachedConfigs[key];
@@ -1817,6 +1877,9 @@ export async function getDanmakuFilterConfig(): Promise<DanmakuFilterConfig | nu
 
   // 数据库存储模式：使用混合缓存策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时返回空
+    if (!isLoggedIn()) return null;
+
     // 优先从缓存获取数据
     const cachedData = cacheManager.getCachedDanmakuFilterConfig();
 
@@ -1876,6 +1939,9 @@ export async function saveDanmakuFilterConfig(
 ): Promise<void> {
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     cacheManager.cacheDanmakuFilterConfig(config);
 
@@ -1936,6 +2002,9 @@ export async function getAllMusicPlayRecords(): Promise<Record<string, MusicPlay
 
   // 数据库存储模式：使用混合缓存策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时直接返回空数据
+    if (!isLoggedIn()) return {};
+
     // 优先从缓存获取数据
     const cachedData = cacheManager.getCachedMusicPlayRecords();
 
@@ -2001,6 +2070,9 @@ export async function saveMusicPlayRecord(
 
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     const cachedRecords = cacheManager.getCachedMusicPlayRecords() || {};
     cachedRecords[key] = record;
@@ -2064,6 +2136,9 @@ export async function deleteMusicPlayRecord(
 
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     const cachedRecords = cacheManager.getCachedMusicPlayRecords() || {};
     delete cachedRecords[key];
@@ -2118,6 +2193,9 @@ export async function deleteMusicPlayRecord(
 export async function clearAllMusicPlayRecords(): Promise<void> {
   // 数据库存储模式：乐观更新策略（包括 redis 和 upstash）
   if (STORAGE_TYPE !== 'localstorage') {
+    // 未登录时静默忽略
+    if (!isLoggedIn()) return;
+
     // 立即更新缓存
     cacheManager.cacheMusicPlayRecords({});
 
