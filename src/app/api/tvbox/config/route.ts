@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
-
 export const runtime = 'nodejs';
 
 /**
@@ -9,8 +7,6 @@ export const runtime = 'nodejs';
  */
 export async function GET(request: NextRequest) {
   // 验证用户登录
-  const authInfo = getAuthInfoFromCookie(request);
-
   // 检查是否开启订阅功能
   const enableSubscribe = process.env.ENABLE_TVBOX_SUBSCRIBE === 'true';
   const subscribeToken = process.env.TVBOX_SUBSCRIBE_TOKEN;

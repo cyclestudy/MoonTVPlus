@@ -2,7 +2,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { XiaoyaClient } from '@/lib/xiaoya.client';
 
@@ -66,8 +65,6 @@ async function getFinalUrl(url: string, maxRedirects = 5): Promise<string> {
  */
 export async function GET(request: NextRequest) {
   try {
-    const authInfo = getAuthInfoFromCookie(request);
-
     const { searchParams } = new URL(request.url);
     const encodedPath = searchParams.get('path');
     const format = searchParams.get('format'); // 新增 format 参数

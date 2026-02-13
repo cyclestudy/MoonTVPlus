@@ -2,7 +2,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { OpenListClient } from '@/lib/openlist.client';
 
@@ -65,8 +64,6 @@ async function getFinalUrl(url: string, maxRedirects = 5): Promise<string> {
  */
 export async function GET(request: NextRequest) {
   try {
-    const authInfo = getAuthInfoFromCookie(request);
-
     const { searchParams } = new URL(request.url);
     const folderName = searchParams.get('folder');
     const fileName = searchParams.get('fileName');

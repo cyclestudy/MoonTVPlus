@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function generateSuggestions(config: AdminConfig, query: string, username: string): Promise<
+async function generateSuggestions(config: AdminConfig, query: string, username?: string): Promise<
   Array<{
     text: string;
     type: 'exact' | 'related' | 'suggestion';

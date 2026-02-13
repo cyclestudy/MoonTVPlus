@@ -2,7 +2,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getConfig } from '@/lib/config';
 import { getTVSeasons } from '@/lib/tmdb.search';
 
@@ -14,8 +13,6 @@ export const runtime = 'nodejs';
  */
 export async function GET(request: NextRequest) {
   try {
-    const authInfo = getAuthInfoFromCookie(request);
-
     const { searchParams } = new URL(request.url);
     const tvIdStr = searchParams.get('tvId');
 
