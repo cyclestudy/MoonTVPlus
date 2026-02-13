@@ -11,9 +11,6 @@ export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   const authInfo = getAuthInfoFromCookie(request);
-  if (!authInfo || !authInfo.username) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
 
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
@@ -31,7 +28,7 @@ export async function GET(request: NextRequest) {
   }
 
   const config = await getConfig();
-  const apiSites = await getAvailableApiSites(authInfo.username);
+  const apiSites = await getAvailableApiSites(authInfo?.username);
 
   // 创建权重映射表
   const weightMap = new Map<string, number>();

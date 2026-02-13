@@ -67,9 +67,6 @@ async function getFinalUrl(url: string, maxRedirects = 5): Promise<string> {
 export async function GET(request: NextRequest) {
   try {
     const authInfo = getAuthInfoFromCookie(request);
-    if (!authInfo || !authInfo.username) {
-      return NextResponse.json({ error: '未授权' }, { status: 401 });
-    }
 
     const { searchParams } = new URL(request.url);
     const encodedPath = searchParams.get('path');

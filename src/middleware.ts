@@ -8,7 +8,7 @@ import { TOKEN_CONFIG } from '@/lib/refresh-token';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 跳过不需要认证的路径
+  // 跳过不需要认证的路径（非管理员路由均为公开访问）
   if (shouldSkipAuth(pathname)) {
     return NextResponse.next();
   }
@@ -155,23 +155,21 @@ function handleAuthFailure(
 }
 
 // 判断是否需要跳过认证的路径
+// 公开访问模式：只有管理员路由需要认证，其他所有路由均为公开访问
 function shouldSkipAuth(pathname: string): boolean {
-  const skipPaths = [
-    '/_next',
-    '/favicon.ico',
-    '/robots.txt',
-    '/manifest.json',
-    '/icons/',
-    '/logo.png',
-    '/screenshot.png',
-  ];
+  // 管理员页面和管理员 API 需要认证
+  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+    return false;
+  }
 
-  return skipPaths.some((path) => pathname.startsWith(path));
+  // 其他所有路由均为公开访问
+  return true;
 }
 
-// 配置middleware匹配规则
+// 配置middleware匹配规则 - 仅匹配管理员路由
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|login|register|oidc-register|warning|api/login|api/register|api/logout|api/auth/oidc|api/auth/refresh|api/cron/|api/server-config|api/proxy-m3u8|api/cms-proxy|api/tvbox/subscribe|api/theme/css|api/openlist/cms-proxy|api/openlist/play|api/emby/cms-proxy|api/emby/play|api/emby/sources).*)',
+    '/admin/:path*',
+    '/api/admin/:path*',
   ],
 };

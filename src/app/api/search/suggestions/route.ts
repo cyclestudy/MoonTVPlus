@@ -14,9 +14,6 @@ export async function GET(request: NextRequest) {
   try {
     // 从 cookie 获取用户信息
     const authInfo = getAuthInfoFromCookie(request);
-    if (!authInfo || !authInfo.username) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     const config = await getConfig();
     const { searchParams } = new URL(request.url);
@@ -27,7 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 生成建议
-    const suggestions = await generateSuggestions(config, query, authInfo.username);
+    const suggestions = await generateSuggestions(config, query, authInfo?.username);
 
     // 从配置中获取缓存时间，如果没有配置则使用默认值300秒（5分钟）
     const cacheTime = config.SiteConfig.SiteInterfaceCacheTime || 300;

@@ -14,9 +14,6 @@ export const runtime = 'nodejs';
  */
 export async function GET(request: NextRequest) {
   const authInfo = getAuthInfoFromCookie(request);
-  if (!authInfo || !authInfo.username) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
@@ -383,7 +380,7 @@ export async function GET(request: NextRequest) {
 
   // 对于其他源，通过搜索API获取，然后精确匹配
   try {
-    const apiSites = await getAvailableApiSites(authInfo.username);
+    const apiSites = await getAvailableApiSites(authInfo?.username);
     const apiSite = apiSites.find((site) => site.key === sourceCode);
 
     if (!apiSite) {

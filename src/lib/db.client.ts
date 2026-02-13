@@ -602,14 +602,13 @@ async function fetchWithAuth(
       return res;
     }
 
-    // 如果刷新后仍然是 401，或者是其他 401 错误，跳转登录
+    // 如果刷新后仍然是 401，或者是其他 401 错误，清除认证信息
     if (res.status === 401) {
       const text2 = await res.clone().text();
       // 再次检查响应体
       if (text2.includes('Unauthorized') || text2.includes('Refresh token expired') || text2.includes('Access token expired')) {
-        // 检查当前页面是否已经是登录页，避免重复跳转
-        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
-          // 调用 logout 接口
+        // 清除认证信息，但不强制跳转登录页（公开访问模式）
+        if (typeof window !== 'undefined') {
           try {
             await fetch('/api/logout', {
               method: 'POST',
@@ -617,15 +616,9 @@ async function fetchWithAuth(
             });
           } catch (error) {
             console.error('注销请求失败:', error);
-            // 登出失败时清除前端cookie
-            clearAuthCookie();
           }
-          const currentUrl = window.location.pathname + window.location.search;
-          const loginUrl = new URL('/login', window.location.origin);
-          loginUrl.searchParams.set('redirect', currentUrl);
-          window.location.href = loginUrl.toString();
+          clearAuthCookie();
         }
-        throw new Error('用户未授权，已跳转到登录页面');
       }
     }
   }

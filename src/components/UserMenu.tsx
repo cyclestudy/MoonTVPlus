@@ -16,6 +16,7 @@ import {
   Globe,
   Home,
   KeyRound,
+  LogIn,
   LogOut,
   Mail,
   MessageSquare,
@@ -2858,6 +2859,22 @@ export const UserMenu: React.FC = () => {
       </div>
     </>
   );
+
+  // 未登录用户显示登录按钮
+  if (!authInfo?.username && storageType !== 'localstorage') {
+    return (
+      <div className='relative'>
+        <button
+          onClick={() => window.location.href = '/login'}
+          className='w-10 h-10 p-2 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-200/50 dark:text-gray-300 dark:hover:bg-gray-700/50 transition-colors'
+          aria-label='Login'
+          title='登录'
+        >
+          <LogIn className='w-full h-full' />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <>

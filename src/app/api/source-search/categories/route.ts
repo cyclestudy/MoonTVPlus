@@ -18,9 +18,6 @@ interface CmsClassResponse {
  */
 export async function GET(request: NextRequest) {
   const authInfo = getAuthInfoFromCookie(request);
-  if (!authInfo || !authInfo.username) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
 
   const { searchParams } = new URL(request.url);
   const sourceKey = searchParams.get('source');
@@ -34,7 +31,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const config = await getConfig();
-    const apiSites = await getAvailableApiSites(authInfo.username);
+    const apiSites = await getAvailableApiSites(authInfo?.username);
     const targetSite = apiSites.find((site) => site.key === sourceKey);
 
     if (!targetSite) {

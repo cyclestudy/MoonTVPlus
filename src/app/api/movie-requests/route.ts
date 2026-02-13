@@ -10,9 +10,6 @@ export const runtime = 'nodejs';
 // GET: 获取求片列表
 export async function GET(request: NextRequest) {
   const authInfo = getAuthInfoFromCookie(request);
-  if (!authInfo || !authInfo.username) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
 
   try {
     const { searchParams } = new URL(request.url);
@@ -24,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     if (myRequests) {
       // 获取用户自己的求片
-      const requestIds = await storage.getUserMovieRequests(authInfo.username);
+      const requestIds = await storage.getUserMovieRequests(authInfo?.username);
       const requests = await Promise.all(
         requestIds.map(id => storage.getMovieRequest(id))
       );

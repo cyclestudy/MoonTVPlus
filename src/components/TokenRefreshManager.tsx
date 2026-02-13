@@ -51,7 +51,7 @@ export function TokenRefreshManager() {
           } else {
             console.error('[Token] Refresh failed:', response.status);
 
-            // 刷新失败，先登出再跳转登录
+            // 刷新失败，清除认证信息（公开访问模式下不强制跳转登录）
             if (response.status === 401 || response.status === 403) {
               // 如果在登录页面，跳过登出和跳转逻辑
               if (window.location.pathname === '/login') {
@@ -66,10 +66,9 @@ export function TokenRefreshManager() {
                 });
               } catch (error) {
                 console.error('[Token] Logout error:', error);
-                // 登出失败时清除前端cookie
-                clearAuthCookie();
               }
-              window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+              // 清除前端cookie，但不强制跳转登录页
+              clearAuthCookie();
             }
             return false;
           }
@@ -85,6 +84,12 @@ export function TokenRefreshManager() {
       return refreshPromise;
     };
 
+    // 检查用户是否已登录
+    const isLoggedIn = (): boolean => {
+      const authInfo = getAuthInfoFromBrowserCookie();
+      return !!(authInfo && (authInfo.username || authInfo.password));
+    };
+
     // 检查 Token 是否需要刷新
     const shouldRefreshToken = (): boolean => {
       const authInfo = getAuthInfoFromBrowserCookie();
@@ -96,18 +101,9 @@ export function TokenRefreshManager() {
 
       // Refresh Token 已过期
       if (now >= authInfo.refreshExpires) {
-        console.log('[Token] Refresh token expired, redirecting to login');
-        // 先登出再跳转登录
-        window.fetch('/api/logout', {
-          method: 'POST',
-          credentials: 'include',
-        }).catch(error => {
-          console.error('[Token] Logout error:', error);
-          // 登出失败时清除前端cookie
-          clearAuthCookie();
-        }).finally(() => {
-          window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
-        });
+        console.log('[Token] Refresh token expired, clearing auth');
+        // 清除过期的认证信息，但不强制跳转登录（公开访问模式）
+        clearAuthCookie();
         return false;
       }
 
@@ -140,8 +136,8 @@ export function TokenRefreshManager() {
         return originalFetch(input, init);
       }
 
-      // 请求前检查：Token 即将过期时主动刷新
-      if (shouldRefreshToken()) {
+      // 请求前检查：已登录用户 Token 即将过期时主动刷新
+      if (isLoggedIn() && shouldRefreshToken()) {
         console.log('[Token] Expiring soon, refreshing proactively...');
         await refreshToken();
       }
@@ -149,8 +145,8 @@ export function TokenRefreshManager() {
       // 发送请求
       let response = await originalFetch(input, init);
 
-      // 响应拦截：401 错误时刷新 Token 并重试（仅重试一次）
-      if (response.status === 401) {
+      // 响应拦截：401 错误时，仅对已登录用户尝试刷新 Token
+      if (response.status === 401 && isLoggedIn()) {
         // 如果在登录页面，跳过刷新逻辑
         if (window.location.pathname === '/login') {
           console.log('[Token] On login page, skipping refresh logic');
@@ -173,9 +169,9 @@ export function TokenRefreshManager() {
               // 刷新成功，重试原请求（仅此一次）
               response = await originalFetch(input, init);
 
-              // 如果重试后仍然是 401，说明有问题，先登出再跳转登录
+              // 如果重试后仍然是 401，说明有问题，清除认证信息
               if (response.status === 401) {
-                console.error('[Token] Still 401 after refresh, redirecting to login');
+                console.error('[Token] Still 401 after refresh, clearing auth');
 
                 // 如果在登录页面，跳过登出和跳转逻辑
                 if (window.location.pathname === '/login') {
@@ -190,10 +186,9 @@ export function TokenRefreshManager() {
                   });
                 } catch (error) {
                   console.error('[Token] Logout error:', error);
-                  // 登出失败时清除前端cookie
-                  clearAuthCookie();
                 }
-                window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+                // 清除前端cookie，但不强制跳转登录页
+                clearAuthCookie();
               }
             }
           } else {
