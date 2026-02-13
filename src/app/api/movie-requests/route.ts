@@ -20,8 +20,11 @@ export async function GET(request: NextRequest) {
     const storage = getStorage();
 
     if (myRequests) {
-      // 获取用户自己的求片
-      const requestIds = await storage.getUserMovieRequests(authInfo?.username);
+      // 获取用户自己的求片（需要登录）
+      if (!authInfo?.username) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      const requestIds = await storage.getUserMovieRequests(authInfo.username);
       const requests = await Promise.all(
         requestIds.map(id => storage.getMovieRequest(id))
       );
